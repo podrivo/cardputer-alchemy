@@ -8,7 +8,8 @@ extern uint16_t theme_col_bg;
 extern uint16_t theme_col_fg;
 extern uint16_t theme_col_err;
 extern uint16_t theme_col_ok_bg;
+extern uint16_t theme_col_dim;
 
 extern const char *theme_title;
-extern const char *theme_prompt;
+extern const char *theme_hint;
 extern const char *theme_kbd_error;

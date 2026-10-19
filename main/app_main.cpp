@@ -1,7 +1,5 @@
-// Cardputer ADV hello: clear display, wait for one TCA8418 key, draw feedback.
-// Wrong board (original Cardputer GPIO matrix) → no keys / dead keyboard.
-
-#include <cstdio>
+// Alchemy: combine two inventory items to discover new ones.
+// Cardputer ADV only (TCA8418 keyboard).
 
 #include "driver/i2c_master.h"
 #include "esp_log.h"
@@ -9,10 +7,11 @@
 #include "freertos/task.h"
 
 #include "display.hpp"
+#include "game.hpp"
 
 namespace {
 
-constexpr char TAG[] = "hello";
+constexpr char TAG[] = "alchemy";
 
 // Cardputer ADV keyboard (TCA8418)
 constexpr gpio_num_t KBD_SDA = GPIO_NUM_8;
@@ -26,6 +25,13 @@ constexpr uint8_t TCA_REG_KEY_EVENT_A = 0x04;
 constexpr uint8_t TCA_REG_KP_GPIO1 = 0x1D;
 constexpr uint8_t TCA_REG_KP_GPIO2 = 0x1E;
 constexpr uint8_t TCA_REG_KP_GPIO3 = 0x1F;
+
+// Raw TCA8418 keycodes (ADV layout)
+constexpr uint8_t KEY_UP = 57;
+constexpr uint8_t KEY_DOWN = 58;
+constexpr uint8_t KEY_ENTER = 67;
+constexpr uint8_t KEY_DEL = 65;
+constexpr uint8_t KEY_ESC = 1;
 
 i2c_master_bus_handle_t i2c_bus;
 i2c_master_dev_handle_t tca;
@@ -77,7 +83,6 @@ bool kbd_init()
     return true;
 }
 
-// Returns true on key-press event; fills keycode (1–56 style).
 bool kbd_poll_press(uint8_t *keycode)
 {
     uint8_t ev = 0;
@@ -97,7 +102,6 @@ bool kbd_poll_press(uint8_t *keycode)
 extern "C" void app_main(void)
 {
     display_init();
-    display_show_prompt();
 
     if (!kbd_init()) {
         ESP_LOGE(TAG, "TCA8418 init failed — is this a Cardputer ADV?");
@@ -105,18 +109,42 @@ extern "C" void app_main(void)
         return;
     }
 
-    ESP_LOGI(TAG, "Waiting for key...");
-    uint8_t key = 0;
+    GameState game;
+    game_init(&game);
+    bool highlight = false;
+    display_show_game(&game, highlight);
+
+    ESP_LOGI(TAG, "Alchemy ready — combine items");
     for (;;) {
-        if (kbd_poll_press(&key)) {
+        uint8_t key = 0;
+        if (!kbd_poll_press(&key)) {
+            vTaskDelay(pdMS_TO_TICKS(20));
+            continue;
+        }
+
+        bool dirty = true;
+        highlight = false;
+        switch (key) {
+        case KEY_UP:
+            game_move(&game, -1);
+            break;
+        case KEY_DOWN:
+            game_move(&game, 1);
+            break;
+        case KEY_ENTER:
+            highlight = game_pick(&game);
+            break;
+        case KEY_DEL:
+        case KEY_ESC:
+            game_clear_slots(&game);
+            break;
+        default:
+            dirty = false;
             break;
         }
-        vTaskDelay(pdMS_TO_TICKS(20));
+
+        if (dirty) {
+            display_show_game(&game, highlight);
+        }
     }
-
-    char line[32];
-    std::snprintf(line, sizeof(line), "key %u", static_cast<unsigned>(key));
-    ESP_LOGI(TAG, "%s", line);
-
-    display_show_key(line);
 }

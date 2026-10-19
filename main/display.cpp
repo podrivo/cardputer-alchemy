@@ -7,7 +7,7 @@ namespace {
 
 M5GFX display;
 
-const char *slot_label(int8_t slot)
+const char *slot_label(int16_t slot)
 {
     if (slot < 0) {
         return "-";

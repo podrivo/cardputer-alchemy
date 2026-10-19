@@ -158,3 +158,28 @@ Games, audio/IMU, and dropping a merged `.bin` into an installer catalog.
 - [M5GFX](https://github.com/m5stack/M5GFX)
 - [M5Cardputer-UserDemo `CardputerADV`](https://github.com/m5stack/M5Cardputer-UserDemo/tree/CardputerADV) (fetch → `idf.py build` reference)
 - TCA8418 keypad controller (I2C)
+
+## License
+
+Released under the [MIT license](LICENSE).
+
+## Colophon
+
+Cardputer ADV firmware toy built from the ADV template. Display + TCA8418 keyboard on Stamp-S3A, with a fast npm/ninja edit→flash loop. Vibe coded with [Cursor](https://cursor.com).
+
+**Stack**
+
+| Piece | Choice |
+|---|---|
+| Firmware | [ESP-IDF](https://docs.espressif.com/projects/esp-idf/) v5.4.2 (ESP32-S3) |
+| Display | [M5GFX](https://github.com/m5stack/M5GFX) |
+| Keyboard | TCA8418 over I2C |
+| Tooling | npm scripts, ninja, ccache, `scripts/fast-build.sh` |
+| Device | [M5Stack Cardputer ADV](https://docs.m5stack.com/en/core/Cardputer-Adv) |
+
+**Tools**
+
+- [ESP-IDF](https://docs.espressif.com/projects/esp-idf/): build / flash / monitor
+- [M5GFX](https://github.com/m5stack/M5GFX): LCD
+- [Cursor](https://cursor.com): vibe coding
+

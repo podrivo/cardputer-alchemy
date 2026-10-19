@@ -131,16 +131,7 @@ Clears the LCD, waits for one TCA8418 key press, then draws the key code. That p
 
 ## How to: colors & copy
 
-All visuals go through a thin theme layer so you can tweak without pulling in M5GFX.
-
-| File | Role |
-|------|------|
-| [`main/theme.cpp`](main/theme.cpp) | **Edit here** — RGB565 colors + UI strings |
-| [`main/theme.hpp`](main/theme.hpp) | Declarations (no M5GFX) |
-| [`main/display.cpp`](main/display.cpp) | Applies theme via M5GFX (`fillScreen`, `setTextColor`, …) |
-| [`main/app_main.cpp`](main/app_main.cpp) | Calls `display_show_*` — no color literals |
-
-### Palette
+Edit [`main/theme.cpp`](main/theme.cpp) only — raw **RGB565 hex** + strings. No `TFT_*` symbols (that keeps M5GFX out of this file for fast rebuilds). `display.cpp` applies the theme; `app_main.cpp` never sets colors.
 
 | Variable | Used for |
 |----------|----------|
@@ -151,48 +142,48 @@ All visuals go through a thin theme layer so you can tweak without pulling in M5
 
 Strings: `theme_title`, `theme_prompt`, `theme_kbd_error`.
 
-Example in `theme.cpp`:
-
 ```cpp
-uint16_t theme_col_bg = 0x001F;     // TFT_BLUE
-uint16_t theme_col_fg = 0xFFFF;     // TFT_WHITE
-uint16_t theme_col_err = 0xF800;    // TFT_RED
-uint16_t theme_col_ok_bg = 0x03E0;  // TFT_DARKGREEN
+// main/theme.cpp — paste hex from the table below
+uint16_t theme_col_bg = 0x001F;     // blue
+uint16_t theme_col_fg = 0xFFFF;     // white
+uint16_t theme_col_err = 0xF800;    // red
+uint16_t theme_col_ok_bg = 0x03E0;  // dark green
 ```
 
-Values are **RGB565** (same as LovyanGFX `TFT_*`). After a theme edit: `npm run dev` (or `npm run app-flash`) — fast path skips regenerating M5GFX / ldgen.
+After a theme edit: `npm run dev` (or `npm run app-flash`).
 
-### Common RGB565 colors
+### RGB565 cheat sheet
 
-Full named list lives in M5GFX after `npm run deps`:  
-`components/M5GFX/src/lgfx/v1/misc/enum.hpp` (search `TFT_BLACK`). You can also use any custom color via `display.color565(r, g, b)` inside `display.cpp`.
+Paste the hex into `theme.cpp`. (Same numeric values as LovyanGFX `TFT_*` names, for reference only.)
 
-| | Name | RGB565 | RGB |
-|---:|------|--------|-----|
-| ![#000000](https://placehold.co/20x20/000000/000000.png) | `TFT_BLACK` | `0x0000` | 0, 0, 0 |
-| ![#000080](https://placehold.co/20x20/000080/000080.png) | `TFT_NAVY` | `0x000F` | 0, 0, 128 |
-| ![#008000](https://placehold.co/20x20/008000/008000.png) | `TFT_DARKGREEN` | `0x03E0` | 0, 128, 0 |
-| ![#008080](https://placehold.co/20x20/008080/008080.png) | `TFT_DARKCYAN` | `0x03EF` | 0, 128, 128 |
-| ![#800000](https://placehold.co/20x20/800000/800000.png) | `TFT_MAROON` | `0x7800` | 128, 0, 0 |
-| ![#800080](https://placehold.co/20x20/800080/800080.png) | `TFT_PURPLE` | `0x780F` | 128, 0, 128 |
-| ![#808000](https://placehold.co/20x20/808000/808000.png) | `TFT_OLIVE` | `0x7BE0` | 128, 128, 0 |
-| ![#D3D3D3](https://placehold.co/20x20/D3D3D3/D3D3D3.png) | `TFT_LIGHTGREY` | `0xD69A` | 211, 211, 211 |
-| ![#808080](https://placehold.co/20x20/808080/808080.png) | `TFT_DARKGREY` | `0x7BEF` | 128, 128, 128 |
-| ![#0000FF](https://placehold.co/20x20/0000FF/0000FF.png) | `TFT_BLUE` | `0x001F` | 0, 0, 255 |
-| ![#00FF00](https://placehold.co/20x20/00FF00/00FF00.png) | `TFT_GREEN` | `0x07E0` | 0, 255, 0 |
-| ![#00FFFF](https://placehold.co/20x20/00FFFF/00FFFF.png) | `TFT_CYAN` | `0x07FF` | 0, 255, 255 |
-| ![#FF0000](https://placehold.co/20x20/FF0000/FF0000.png) | `TFT_RED` | `0xF800` | 255, 0, 0 |
-| ![#FF00FF](https://placehold.co/20x20/FF00FF/FF00FF.png) | `TFT_MAGENTA` | `0xF81F` | 255, 0, 255 |
-| ![#FFFF00](https://placehold.co/20x20/FFFF00/FFFF00.png) | `TFT_YELLOW` | `0xFFE0` | 255, 255, 0 |
-| ![#FFFFFF](https://placehold.co/20x20/FFFFFF/FFFFFF.png) | `TFT_WHITE` | `0xFFFF` | 255, 255, 255 |
-| ![#FFB400](https://placehold.co/20x20/FFB400/FFB400.png) | `TFT_ORANGE` | `0xFDA0` | 255, 180, 0 |
-| ![#B4FF00](https://placehold.co/20x20/B4FF00/B4FF00.png) | `TFT_GREENYELLOW` | `0xB7E0` | 180, 255, 0 |
-| ![#FFC0CB](https://placehold.co/20x20/FFC0CB/FFC0CB.png) | `TFT_PINK` | `0xFE19` | 255, 192, 203 |
-| ![#964B00](https://placehold.co/20x20/964B00/964B00.png) | `TFT_BROWN` | `0x9A60` | 150, 75, 0 |
-| ![#FFD700](https://placehold.co/20x20/FFD700/FFD700.png) | `TFT_GOLD` | `0xFEA0` | 255, 215, 0 |
-| ![#C0C0C0](https://placehold.co/20x20/C0C0C0/C0C0C0.png) | `TFT_SILVER` | `0xC618` | 192, 192, 192 |
-| ![#87CEEB](https://placehold.co/20x20/87CEEB/87CEEB.png) | `TFT_SKYBLUE` | `0x867D` | 135, 206, 235 |
-| ![#B42EE2](https://placehold.co/20x20/B42EE2/B42EE2.png) | `TFT_VIOLET` | `0x915C` | 180, 46, 226 |
+| | Color | Hex | RGB |
+|---:|------|-----|-----|
+| ![#000000](https://placehold.co/20x20/000000/000000.png) | black | `0x0000` | 0, 0, 0 |
+| ![#808080](https://placehold.co/20x20/808080/808080.png) | dark grey | `0x7BEF` | 128, 128, 128 |
+| ![#C0C0C0](https://placehold.co/20x20/C0C0C0/C0C0C0.png) | silver | `0xC618` | 192, 192, 192 |
+| ![#D3D3D3](https://placehold.co/20x20/D3D3D3/D3D3D3.png) | light grey | `0xD69A` | 211, 211, 211 |
+| ![#FFFFFF](https://placehold.co/20x20/FFFFFF/FFFFFF.png) | white | `0xFFFF` | 255, 255, 255 |
+| ![#800000](https://placehold.co/20x20/800000/800000.png) | maroon | `0x7800` | 128, 0, 0 |
+| ![#FF0000](https://placehold.co/20x20/FF0000/FF0000.png) | red | `0xF800` | 255, 0, 0 |
+| ![#FFC0CB](https://placehold.co/20x20/FFC0CB/FFC0CB.png) | pink | `0xFE19` | 255, 192, 203 |
+| ![#FFB400](https://placehold.co/20x20/FFB400/FFB400.png) | orange | `0xFDA0` | 255, 180, 0 |
+| ![#964B00](https://placehold.co/20x20/964B00/964B00.png) | brown | `0x9A60` | 150, 75, 0 |
+| ![#FFD700](https://placehold.co/20x20/FFD700/FFD700.png) | gold | `0xFEA0` | 255, 215, 0 |
+| ![#FFFF00](https://placehold.co/20x20/FFFF00/FFFF00.png) | yellow | `0xFFE0` | 255, 255, 0 |
+| ![#808000](https://placehold.co/20x20/808000/808000.png) | olive | `0x7BE0` | 128, 128, 0 |
+| ![#B4FF00](https://placehold.co/20x20/B4FF00/B4FF00.png) | green yellow | `0xB7E0` | 180, 255, 0 |
+| ![#008000](https://placehold.co/20x20/008000/008000.png) | dark green | `0x03E0` | 0, 128, 0 |
+| ![#00FF00](https://placehold.co/20x20/00FF00/00FF00.png) | green | `0x07E0` | 0, 255, 0 |
+| ![#008080](https://placehold.co/20x20/008080/008080.png) | dark cyan | `0x03EF` | 0, 128, 128 |
+| ![#00FFFF](https://placehold.co/20x20/00FFFF/00FFFF.png) | cyan | `0x07FF` | 0, 255, 255 |
+| ![#000080](https://placehold.co/20x20/000080/000080.png) | navy | `0x000F` | 0, 0, 128 |
+| ![#0000FF](https://placehold.co/20x20/0000FF/0000FF.png) | blue | `0x001F` | 0, 0, 255 |
+| ![#87CEEB](https://placehold.co/20x20/87CEEB/87CEEB.png) | sky blue | `0x867D` | 135, 206, 235 |
+| ![#800080](https://placehold.co/20x20/800080/800080.png) | purple | `0x780F` | 128, 0, 128 |
+| ![#B42EE2](https://placehold.co/20x20/B42EE2/B42EE2.png) | violet | `0x915C` | 180, 46, 226 |
+| ![#FF00FF](https://placehold.co/20x20/FF00FF/FF00FF.png) | magenta | `0xF81F` | 255, 0, 255 |
+
+More values (after `npm run deps`): `components/M5GFX/src/lgfx/v1/misc/enum.hpp`. Custom colors: `display.color565(r, g, b)` in `display.cpp`.
 
 ## Layout
 

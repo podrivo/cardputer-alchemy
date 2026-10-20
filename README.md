@@ -1,10 +1,24 @@
-# cardputer-adv-template
+# cardputer-alchemy
 
-Minimal [ESP-IDF](https://docs.espressif.com/projects/esp-idf/) starter for the **M5Stack Cardputer ADV** only.
+Little Alchemy–style combine game for the **M5Stack Cardputer ADV** (ESP-IDF).
 
-Fork this for games/apps. It is not a full demo and not a template for the original Cardputer (GPIO matrix keyboard). ADV uses a **TCA8418** over I2C — if keys do nothing, you are on the wrong board.
+Forked from an ADV starter template. ADV uses a **TCA8418** over I2C — if keys do nothing, you are on the wrong board (original Cardputer uses a GPIO matrix keyboard).
 
 Hardware: [Cardputer ADV](https://docs.m5stack.com/en/core/Cardputer-Adv) (Stamp-S3A / ESP32-S3, 8 MB flash, 1.14" LCD).
+
+## Game
+
+Start with **Fire, Water, Earth, Air**. Pick two unlocked items to discover new ones. Soft goal: unlock all **220** items via **393** recipes (see [`COMBINATIONS.md`](COMBINATIONS.md)).
+
+Recipes lean on [Little Alchemy](https://littlealchemy.com/) / [Little Alchemy 2](https://littlealchemy2.com/) style mixes ([official hints](https://hints.littlealchemy2.com/), [combination list](https://littlealchemy2cheats.com/combinations)), plus a few Cardputer easter eggs.
+
+| Key | Action |
+|-----|--------|
+| ↑ / ↓ | Move inventory cursor |
+| Enter | Fill slot A, then B + combine |
+| Del / Esc | Clear slots |
+
+Screen: title + progress (`N/220`), slots `A + B`, 4-row inventory, status, hint. New discoveries flash green.
 
 ## Prerequisites (one-time)
 
@@ -97,7 +111,7 @@ npm run bin               # write merged flash image to bins/
 
 **Why this is fast:** a normal `ninja` rebuild after a one-line edit spends ~4–5s regenerating `sections.ld` (ldgen) even though the linker script did not change, plus ~2s if `export.sh` runs again. `fast-build` compiles `main/`, then **reuses the existing `sections.ld`** and links/elf2images directly (~1.4s vs ~6s measured here). `watch.sh` exports IDF **once** and lets `entr` inherit that env (no re-export per save).
 
-Tweak colors/strings in [`main/theme.cpp`](main/theme.cpp) so you do not recompile M5GFX. Display helpers live in [`main/display.cpp`](main/display.cpp) (PCH’d).
+Tweak colors/strings in [`main/theme.cpp`](main/theme.cpp) so you do not recompile M5GFX. Display helpers live in [`main/display.cpp`](main/display.cpp) (PCH’d). Game logic and the recipe table live in [`main/game.cpp`](main/game.cpp).
 
 ```bash
 npm run fast-build          # app .bin only (~1–2s after theme edit)
@@ -125,29 +139,27 @@ Or call `idf.py` directly after `. ~/esp/esp-idf/export.sh`.
 
 Put the device in download mode if flash fails (hold G0 / reset per Stamp-S3 docs).
 
-## What the sample does
-
-Clears the LCD, waits for one TCA8418 key press, then draws the key code. That proves display + ADV keyboard wiring.
-
 ## How to: colors & copy
 
 Edit [`main/theme.cpp`](main/theme.cpp) only — raw **RGB565 hex** + strings. No `TFT_*` symbols (that keeps M5GFX out of this file for fast rebuilds). `display.cpp` applies the theme; `app_main.cpp` never sets colors.
 
 | Variable | Used for |
 |----------|----------|
-| `theme_col_bg` | Idle screen background |
-| `theme_col_fg` | Normal text (on bg / ok bg) |
+| `theme_col_bg` | Screen background |
+| `theme_col_fg` | Normal text |
+| `theme_col_dim` | Hint / secondary text |
 | `theme_col_err` | Keyboard-init error text |
-| `theme_col_ok_bg` | Background after a key press |
+| `theme_col_ok_bg` | Background flash on new discovery |
 
-Strings: `theme_title`, `theme_prompt`, `theme_kbd_error`.
+Strings: `theme_title`, `theme_hint`, `theme_kbd_error`.
 
 ```cpp
 // main/theme.cpp — paste hex from the table below
-uint16_t theme_col_bg = 0x001F;     // blue
+uint16_t theme_col_bg = 0x0000;     // black
 uint16_t theme_col_fg = 0xFFFF;     // white
 uint16_t theme_col_err = 0xF800;    // red
 uint16_t theme_col_ok_bg = 0x03E0;  // dark green
+uint16_t theme_col_dim = 0x7BEF;    // dark grey
 ```
 
 After a theme edit: `npm run dev` (or `npm run app-flash`).
@@ -196,10 +208,13 @@ scripts/watch.sh      # watch → fast-build for npm run dev / dev:build
 bins/                 # merged .bin (flash at 0x0)
 CMakeLists.txt
 sdkconfig.defaults    # 8 MB flash, USB Serial/JTAG console
-main/app_main.cpp     # hello-world + keyboard
+COMBINATIONS.md       # full item + recipe catalog
+main/app_main.cpp     # TCA8418 keyboard + game loop
+main/game.cpp         # items, recipes, combine / unlock
+main/game.hpp
 main/theme.cpp        # colors/strings (edit here for fast visual tweaks)
 main/theme.hpp
-main/display.cpp      # M5GFX helpers
+main/display.cpp      # M5GFX helpers + game screen
 main/display.hpp
 main/pch_display.hpp  # M5GFX precompiled header for display.cpp
 components/M5GFX/     # after clone (gitignored)
@@ -207,10 +222,11 @@ components/M5GFX/     # after clone (gitignored)
 
 ## Out of scope
 
-Games, audio/IMU, and dropping a merged `.bin` into an installer catalog.
+Audio/IMU, save/load progress, and dropping a merged `.bin` into an installer catalog.
 
 ## Credits
 
+- [Little Alchemy](https://littlealchemy.com/) / [Little Alchemy 2](https://littlealchemy2.com/) — recipe inspiration ([hints](https://hints.littlealchemy2.com/), [combination list](https://littlealchemy2cheats.com/combinations))
 - [M5GFX](https://github.com/m5stack/M5GFX)
 - [M5Cardputer-UserDemo `CardputerADV`](https://github.com/m5stack/M5Cardputer-UserDemo/tree/CardputerADV) (fetch → `idf.py build` reference)
 - TCA8418 keypad controller (I2C)
@@ -221,7 +237,7 @@ Released under the [MIT license](LICENSE).
 
 ## Colophon
 
-Cardputer ADV firmware toy built from the ADV template. Display + TCA8418 keyboard on Stamp-S3A, with a fast npm/ninja edit→flash loop. Vibe coded with [Cursor](https://cursor.com).
+Combine-two-elements toy for Cardputer ADV. Display + TCA8418 keyboard on Stamp-S3A, with a fast npm/ninja edit→flash loop. Vibe coded with [Cursor](https://cursor.com).
 
 **Stack**
 
@@ -238,4 +254,3 @@ Cardputer ADV firmware toy built from the ADV template. Display + TCA8418 keyboa
 - [ESP-IDF](https://docs.espressif.com/projects/esp-idf/): build / flash / monitor
 - [M5GFX](https://github.com/m5stack/M5GFX): LCD
 - [Cursor](https://cursor.com): vibe coding
-

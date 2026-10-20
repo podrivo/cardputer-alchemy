@@ -21,11 +21,12 @@ void display_init()
 {
     display.init();
     display.setRotation(1);
+    display.fillRect(0, 0, display.width(), display.height(), theme_col_bg);
 }
 
 void display_show_kbd_error()
 {
-    display.fillScreen(theme_col_bg);
+    display.fillRect(0, 0, display.width(), display.height(), theme_col_bg);
     display.setTextColor(theme_col_err, theme_col_bg);
     display.setTextSize(1);
     display.setCursor(8, 60);
@@ -35,7 +36,7 @@ void display_show_kbd_error()
 void display_show_game(const GameState *g, bool highlight)
 {
     const uint16_t bg = highlight ? theme_col_ok_bg : theme_col_bg;
-    display.fillScreen(bg);
+    display.fillRect(0, 0, display.width(), display.height(), bg);
     display.setTextColor(theme_col_fg, bg);
     display.setTextSize(1);
 

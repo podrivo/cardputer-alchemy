@@ -772,9 +772,20 @@ def write_cpp(items: list[str], recipes: list[tuple[str, str, str]]) -> None:
 
 #include <cstring>
 
+#include "esp_log.h"
+#include "nvs.h"
+#include "nvs_flash.h"
+
 int game_visible = 4;
 
 namespace {{
+
+constexpr char TAG[] = "game";
+constexpr char kNvsNs[] = "alchemy";
+constexpr char kNvsKey[] = "unlock";
+constexpr uint8_t kSaveVer = 1;
+constexpr size_t kBitBytes = (GAME_ITEM_COUNT + 7) / 8;
+constexpr size_t kBlobSize = 1 + kBitBytes;
 
 const char *const kNames[GAME_ITEM_COUNT] = {{
 {chr(10).join(name_lines)}
@@ -812,6 +823,72 @@ void rebuild_inventory(GameState *g)
     }}
 }}
 
+bool nvs_ensure()
+{{
+    static bool ready = false;
+    if (ready) {{
+        return true;
+    }}
+    esp_err_t err = nvs_flash_init();
+    if (err == ESP_ERR_NVS_NO_FREE_PAGES || err == ESP_ERR_NVS_NEW_VERSION_FOUND) {{
+        nvs_flash_erase();
+        err = nvs_flash_init();
+    }}
+    ready = (err == ESP_OK);
+    if (!ready) {{
+        ESP_LOGE(TAG, "NVS init failed: %s", esp_err_to_name(err));
+    }}
+    return ready;
+}}
+
+bool load_unlocked(GameState *g)
+{{
+    if (!nvs_ensure()) {{
+        return false;
+    }}
+    nvs_handle_t h;
+    if (nvs_open(kNvsNs, NVS_READONLY, &h) != ESP_OK) {{
+        return false;
+    }}
+    uint8_t blob[kBlobSize];
+    size_t len = sizeof(blob);
+    esp_err_t err = nvs_get_blob(h, kNvsKey, blob, &len);
+    nvs_close(h);
+    if (err != ESP_OK || len < 2 || blob[0] != kSaveVer) {{
+        return false;
+    }}
+    const int bits = static_cast<int>((len - 1) * 8);
+    int count = 0;
+    for (int i = 0; i < GAME_ITEM_COUNT && i < bits; ++i) {{
+        const bool on = (blob[1 + i / 8] >> (i % 8)) & 1;
+        g->unlocked[i] = on;
+        count += on ? 1 : 0;
+    }}
+    return count > 0;
+}}
+
+void save_unlocked(const GameState *g)
+{{
+    if (!nvs_ensure()) {{
+        return;
+    }}
+    uint8_t blob[kBlobSize] = {{}};
+    blob[0] = kSaveVer;
+    for (int i = 0; i < GAME_ITEM_COUNT; ++i) {{
+        if (g->unlocked[i]) {{
+            blob[1 + i / 8] |= static_cast<uint8_t>(1u << (i % 8));
+        }}
+    }}
+    nvs_handle_t h;
+    if (nvs_open(kNvsNs, NVS_READWRITE, &h) != ESP_OK) {{
+        return;
+    }}
+    if (nvs_set_blob(h, kNvsKey, blob, sizeof(blob)) == ESP_OK) {{
+        nvs_commit(h);
+    }}
+    nvs_close(h);
+}}
+
 bool unlock(GameState *g, ItemId id)
 {{
     if (g->unlocked[id]) {{
@@ -819,6 +896,7 @@ bool unlock(GameState *g, ItemId id)
     }}
     g->unlocked[id] = true;
     rebuild_inventory(g);
+    save_unlocked(g);
     return true;
 }}
 
@@ -839,10 +917,13 @@ void game_init(GameState *g)
     std::memset(g, 0, sizeof(*g));
     g->slot_a = -1;
     g->slot_b = -1;
-    g->unlocked[{enum_name("Fire")}] = true;
-    g->unlocked[{enum_name("Water")}] = true;
-    g->unlocked[{enum_name("Earth")}] = true;
-    g->unlocked[{enum_name("Air")}] = true;
+    if (!load_unlocked(g)) {{
+        g->unlocked[{enum_name("Fire")}] = true;
+        g->unlocked[{enum_name("Water")}] = true;
+        g->unlocked[{enum_name("Earth")}] = true;
+        g->unlocked[{enum_name("Air")}] = true;
+        save_unlocked(g);
+    }}
     rebuild_inventory(g);
 }}
 

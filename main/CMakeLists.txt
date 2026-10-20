@@ -1,7 +1,7 @@
 idf_component_register(
     SRCS "app_main.cpp" "display.cpp" "theme.cpp" "game.cpp" "sound.cpp"
     INCLUDE_DIRS "."
-    REQUIRES M5GFX driver esp_driver_i2s
+    REQUIRES M5GFX driver esp_driver_i2s nvs_flash
 )
 
 # PCH for M5GFX — only on display.cpp so theme/app_main/game stay light.

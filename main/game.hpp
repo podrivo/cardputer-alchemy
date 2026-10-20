@@ -3,7 +3,7 @@
 #include <cstdint>
 
 constexpr int GAME_ITEM_COUNT = 220;
-constexpr int GAME_VISIBLE = 4;
+extern int game_visible; // visible inventory rows (set from display height)
 
 enum ItemId : uint8_t {
     ITEM_FIRE = 0,

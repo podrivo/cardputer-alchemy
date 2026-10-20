@@ -112,6 +112,7 @@ extern "C" void app_main(void)
     GameState game;
     game_init(&game);
     bool highlight = false;
+    bool help = false;
     display_show_game(&game, highlight);
 
     ESP_LOGI(TAG, "Alchemy ready — combine items");
@@ -119,6 +120,20 @@ extern "C" void app_main(void)
         uint8_t key = 0;
         if (!kbd_poll_press(&key)) {
             vTaskDelay(pdMS_TO_TICKS(20));
+            continue;
+        }
+
+        if (key == KEY_ESC) {
+            help = !help;
+            if (help) {
+                display_show_help();
+            } else {
+                display_show_game(&game, false);
+            }
+            continue;
+        }
+
+        if (help) {
             continue;
         }
 
@@ -135,7 +150,6 @@ extern "C" void app_main(void)
             highlight = game_pick(&game);
             break;
         case KEY_DEL:
-        case KEY_ESC:
             game_clear_slots(&game);
             break;
         default:

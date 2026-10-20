@@ -3,6 +3,8 @@
 #include <cstdio>
 #include <cstring>
 
+int game_visible = 4;
+
 namespace {
 
 char status_buf[32];
@@ -481,8 +483,8 @@ void rebuild_inventory(GameState *g)
     if (g->scroll > g->cursor) {
         g->scroll = g->cursor;
     }
-    if (g->cursor >= g->scroll + GAME_VISIBLE) {
-        g->scroll = g->cursor - GAME_VISIBLE + 1;
+    if (g->cursor >= g->scroll + game_visible) {
+        g->scroll = g->cursor - game_visible + 1;
     }
     if (g->scroll < 0) {
         g->scroll = 0;
@@ -520,7 +522,7 @@ void game_init(GameState *g)
     g->unlocked[ITEM_WATER] = true;
     g->unlocked[ITEM_EARTH] = true;
     g->unlocked[ITEM_AIR] = true;
-    g->status = "Pick two to combine";
+    g->status = "";
     rebuild_inventory(g);
 }
 
@@ -550,8 +552,8 @@ void game_move(GameState *g, int delta)
     }
     if (g->cursor < g->scroll) {
         g->scroll = g->cursor;
-    } else if (g->cursor >= g->scroll + GAME_VISIBLE) {
-        g->scroll = g->cursor - GAME_VISIBLE + 1;
+    } else if (g->cursor >= g->scroll + game_visible) {
+        g->scroll = g->cursor - game_visible + 1;
     }
 }
 
@@ -559,7 +561,7 @@ void game_clear_slots(GameState *g)
 {
     g->slot_a = -1;
     g->slot_b = -1;
-    g->status = "Pick two to combine";
+    g->status = "";
 }
 
 bool game_pick(GameState *g)

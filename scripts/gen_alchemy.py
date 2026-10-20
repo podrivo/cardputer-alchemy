@@ -746,8 +746,8 @@ def write_hpp(items: list[str]) -> None:
         "int game_unlocked_count(const GameState *g);",
         "",
         "// Enter on current cursor item — fill A, then B+combine.",
-        "// Returns true if the screen should highlight a discovery.",
-        "bool game_pick(GameState *g);",
+        "// Returns newly unlocked ItemId, or 0xFF if nothing new.",
+        "ItemId game_pick(GameState *g);",
         "void game_clear_slots(GameState *g);",
         "void game_move(GameState *g, int delta);",
         "",
@@ -964,28 +964,27 @@ void game_clear_slots(GameState *g)
     g->slot_b = -1;
 }}
 
-bool game_pick(GameState *g)
+ItemId game_pick(GameState *g)
 {{
     if (g->inventory_count <= 0) {{
-        return false;
+        return static_cast<ItemId>(0xFF);
     }}
     const ItemId id = g->inventory[g->cursor];
 
     if (g->slot_a < 0) {{
         g->slot_a = static_cast<int16_t>(id);
         g->slot_b = -1;
-        return false;
+        return static_cast<ItemId>(0xFF);
     }}
 
     g->slot_b = static_cast<int16_t>(id);
     const ItemId result = combine(static_cast<ItemId>(g->slot_a), id);
     g->slot_a = -1;
     g->slot_b = -1;
-    if (result == static_cast<ItemId>(0xFF)) {{
-        return false;
+    if (result == static_cast<ItemId>(0xFF) || !unlock(g, result)) {{
+        return static_cast<ItemId>(0xFF);
     }}
-
-    return unlock(g, result);
+    return result;
 }}
 """
     open("main/game.cpp", "w").write(body)

@@ -118,9 +118,8 @@ extern "C" void app_main(void)
 
     GameState game;
     game_init(&game);
-    bool highlight = false;
     bool help = false;
-    display_show_game(&game, highlight);
+    display_show_game(&game, false);
 
     ESP_LOGI(TAG, "Alchemy ready — combine items");
     for (;;) {
@@ -154,7 +153,6 @@ extern "C" void app_main(void)
         }
 
         bool dirty = true;
-        highlight = false;
         switch (key) {
         case KEY_UP:
             game_move(&game, -1);
@@ -162,12 +160,24 @@ extern "C" void app_main(void)
         case KEY_DOWN:
             game_move(&game, 1);
             break;
-        case KEY_ENTER:
-            highlight = game_pick(&game);
-            if (highlight) {
+        case KEY_ENTER: {
+            const ItemId discovered = game_pick(&game);
+            if (discovered != static_cast<ItemId>(0xFF)) {
+                display_show_discover(game_item_name(discovered));
                 sound_play_discover();
+                const TickType_t deadline = xTaskGetTickCount() + pdMS_TO_TICKS(1500);
+                while (xTaskGetTickCount() < deadline) {
+                    uint8_t dismiss = 0;
+                    if (kbd_poll_press(&dismiss)) {
+                        break;
+                    }
+                    vTaskDelay(pdMS_TO_TICKS(20));
+                }
+                display_show_game(&game, false);
+                dirty = false;
             }
             break;
+        }
         case KEY_DEL:
             game_clear_slots(&game);
             break;
@@ -177,7 +187,7 @@ extern "C" void app_main(void)
         }
 
         if (dirty) {
-            display_show_game(&game, highlight);
+            display_show_game(&game, false);
         }
     }
 }

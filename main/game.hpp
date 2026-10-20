@@ -243,7 +243,7 @@ const char *game_item_name(ItemId id);
 int game_unlocked_count(const GameState *g);
 
 // Enter on current cursor item — fill A, then B+combine.
-// Returns true if the screen should highlight a discovery.
-bool game_pick(GameState *g);
+// Returns newly unlocked ItemId, or 0xFF if nothing new.
+ItemId game_pick(GameState *g);
 void game_clear_slots(GameState *g);
 void game_move(GameState *g, int delta);

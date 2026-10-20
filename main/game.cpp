@@ -640,26 +640,25 @@ void game_clear_slots(GameState *g)
     g->slot_b = -1;
 }
 
-bool game_pick(GameState *g)
+ItemId game_pick(GameState *g)
 {
     if (g->inventory_count <= 0) {
-        return false;
+        return static_cast<ItemId>(0xFF);
     }
     const ItemId id = g->inventory[g->cursor];
 
     if (g->slot_a < 0) {
         g->slot_a = static_cast<int16_t>(id);
         g->slot_b = -1;
-        return false;
+        return static_cast<ItemId>(0xFF);
     }
 
     g->slot_b = static_cast<int16_t>(id);
     const ItemId result = combine(static_cast<ItemId>(g->slot_a), id);
     g->slot_a = -1;
     g->slot_b = -1;
-    if (result == static_cast<ItemId>(0xFF)) {
-        return false;
+    if (result == static_cast<ItemId>(0xFF) || !unlock(g, result)) {
+        return static_cast<ItemId>(0xFF);
     }
-
-    return unlock(g, result);
+    return result;
 }

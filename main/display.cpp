@@ -79,3 +79,19 @@ void display_show_game(const GameState *g, bool highlight)
                        game_item_name(g->inventory[i]));
     }
 }
+
+void display_show_discover(const char *name)
+{
+    const uint16_t bg = theme_col_ok_bg;
+    display.fillRect(0, 0, display.width(), display.height(), bg);
+    display.setTextColor(theme_col_fg, bg);
+    display.setTextSize(2);
+    int w = display.textWidth(name);
+    if (w > display.width() - 8) {
+        display.setTextSize(1);
+        w = display.textWidth(name);
+    }
+    const int h = display.fontHeight();
+    display.setCursor((display.width() - w) / 2, (display.height() - h) / 2);
+    display.print(name);
+}

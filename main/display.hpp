@@ -8,3 +8,4 @@ void display_init();
 void display_show_kbd_error();
 void display_show_game(const GameState *g, bool highlight);
 void display_show_help();
+void display_show_discover(const char *name);

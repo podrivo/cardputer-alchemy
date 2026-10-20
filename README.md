@@ -10,6 +10,8 @@ Hardware: [Cardputer ADV](https://docs.m5stack.com/en/core/Cardputer-Adv) (Stamp
 
 Start with **Fire, Water, Earth, Air**. Pick two unlocked items to discover new ones. Soft goal: unlock all **220** items via **393** recipes (see [`COMBINATIONS.md`](COMBINATIONS.md)).
 
+Recipes lean on [Little Alchemy](https://littlealchemy.com/) / [Little Alchemy 2](https://littlealchemy2.com/) style mixes ([official hints](https://hints.littlealchemy2.com/), [combination list](https://littlealchemy2cheats.com/combinations)), plus a few Cardputer easter eggs.
+
 | Key | Action |
 |-----|--------|
 | ↑ / ↓ | Move inventory cursor |
@@ -224,7 +226,7 @@ Audio/IMU, save/load progress, and dropping a merged `.bin` into an installer ca
 
 ## Credits
 
-- [Little Alchemy](https://littlealchemy.com/) / [Little Alchemy 2](https://littlealchemy2.com/) (recipe inspiration)
+- [Little Alchemy](https://littlealchemy.com/) / [Little Alchemy 2](https://littlealchemy2.com/) — recipe inspiration ([hints](https://hints.littlealchemy2.com/), [combination list](https://littlealchemy2cheats.com/combinations))
 - [M5GFX](https://github.com/m5stack/M5GFX)
 - [M5Cardputer-UserDemo `CardputerADV`](https://github.com/m5stack/M5Cardputer-UserDemo/tree/CardputerADV) (fetch → `idf.py build` reference)
 - TCA8418 keypad controller (I2C)

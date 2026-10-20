@@ -1,13 +1,10 @@
 #include "game.hpp"
 
-#include <cstdio>
 #include <cstring>
 
 int game_visible = 4;
 
 namespace {
-
-char status_buf[32];
 
 const char *const kNames[GAME_ITEM_COUNT] = {
     "Fire", "Water", "Earth", "Air",
@@ -522,7 +519,6 @@ void game_init(GameState *g)
     g->unlocked[ITEM_WATER] = true;
     g->unlocked[ITEM_EARTH] = true;
     g->unlocked[ITEM_AIR] = true;
-    g->status = "";
     rebuild_inventory(g);
 }
 
@@ -561,7 +557,6 @@ void game_clear_slots(GameState *g)
 {
     g->slot_a = -1;
     g->slot_b = -1;
-    g->status = "";
 }
 
 bool game_pick(GameState *g)
@@ -574,7 +569,6 @@ bool game_pick(GameState *g)
     if (g->slot_a < 0) {
         g->slot_a = static_cast<int16_t>(id);
         g->slot_b = -1;
-        g->status = "Pick second item";
         return false;
     }
 
@@ -583,13 +577,8 @@ bool game_pick(GameState *g)
     g->slot_a = -1;
     g->slot_b = -1;
     if (result == static_cast<ItemId>(0xFF)) {
-        g->status = "Nothing happened";
         return false;
     }
 
-    const bool is_new = unlock(g, result);
-    std::snprintf(status_buf, sizeof(status_buf), is_new ? "New: %s" : "Got: %s",
-                  game_item_name(result));
-    g->status = status_buf;
-    return is_new;
+    return unlock(g, result);
 }

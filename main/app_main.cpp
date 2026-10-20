@@ -8,6 +8,7 @@
 
 #include "display.hpp"
 #include "game.hpp"
+#include "sound.hpp"
 
 namespace {
 
@@ -109,6 +110,10 @@ extern "C" void app_main(void)
         return;
     }
 
+    if (!sound_init(i2c_bus)) {
+        ESP_LOGW(TAG, "Speaker init failed — continuing without sound");
+    }
+
     GameState game;
     game_init(&game);
     bool highlight = false;
@@ -148,6 +153,9 @@ extern "C" void app_main(void)
             break;
         case KEY_ENTER:
             highlight = game_pick(&game);
+            if (highlight) {
+                sound_play_discover();
+            }
             break;
         case KEY_DEL:
             game_clear_slots(&game);

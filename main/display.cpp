@@ -25,8 +25,7 @@ void display_init()
     display.init();
     display.setRotation(1);
 
-    const int status_y = display.height() - kRowH;
-    int rows = (status_y - kListTop) / kRowH;
+    int rows = (display.height() - kListTop) / kRowH;
     if (rows < 1) {
         rows = 1;
     }
@@ -79,7 +78,4 @@ void display_show_game(const GameState *g, bool highlight)
         display.printf("%c %s", i == g->cursor ? '>' : ' ',
                        game_item_name(g->inventory[i]));
     }
-
-    display.setCursor(4, display.height() - kRowH);
-    display.print(g->status ? g->status : "");
 }

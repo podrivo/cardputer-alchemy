@@ -236,7 +236,6 @@ struct GameState {
     int scroll;       // first visible inventory index
     int16_t slot_a;   // ItemId or -1
     int16_t slot_b;   // ItemId or -1
-    const char *status;
 };
 
 void game_init(GameState *g);

@@ -739,7 +739,6 @@ def write_hpp(items: list[str]) -> None:
         "    int scroll;       // first visible inventory index",
         "    int16_t slot_a;   // ItemId or -1",
         "    int16_t slot_b;   // ItemId or -1",
-        "    const char *status;",
         "};",
         "",
         "void game_init(GameState *g);",
@@ -771,14 +770,11 @@ def write_cpp(items: list[str], recipes: list[tuple[str, str, str]]) -> None:
 
     body = f"""#include "game.hpp"
 
-#include <cstdio>
 #include <cstring>
 
 int game_visible = 4;
 
 namespace {{
-
-char status_buf[32];
 
 const char *const kNames[GAME_ITEM_COUNT] = {{
 {chr(10).join(name_lines)}
@@ -847,7 +843,6 @@ void game_init(GameState *g)
     g->unlocked[{enum_name("Water")}] = true;
     g->unlocked[{enum_name("Earth")}] = true;
     g->unlocked[{enum_name("Air")}] = true;
-    g->status = "";
     rebuild_inventory(g);
 }}
 
@@ -886,7 +881,6 @@ void game_clear_slots(GameState *g)
 {{
     g->slot_a = -1;
     g->slot_b = -1;
-    g->status = "";
 }}
 
 bool game_pick(GameState *g)
@@ -899,7 +893,6 @@ bool game_pick(GameState *g)
     if (g->slot_a < 0) {{
         g->slot_a = static_cast<int16_t>(id);
         g->slot_b = -1;
-        g->status = "Pick second item";
         return false;
     }}
 
@@ -908,15 +901,10 @@ bool game_pick(GameState *g)
     g->slot_a = -1;
     g->slot_b = -1;
     if (result == static_cast<ItemId>(0xFF)) {{
-        g->status = "Nothing happened";
         return false;
     }}
 
-    const bool is_new = unlock(g, result);
-    std::snprintf(status_buf, sizeof(status_buf), is_new ? "New: %s" : "Got: %s",
-                  game_item_name(result));
-    g->status = status_buf;
-    return is_new;
+    return unlock(g, result);
 }}
 """
     open("main/game.cpp", "w").write(body)

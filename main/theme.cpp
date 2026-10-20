@@ -15,6 +15,7 @@ const char *theme_help_lines[] = {
     "^v  move",
     "ent pick",
     "del clear",
+    "+-  volume",
     "esc close",
 };
 const int theme_help_line_count =

@@ -6,3 +6,5 @@
 
 bool sound_init(i2c_master_bus_handle_t i2c_bus);
 void sound_play_discover();
+void sound_volume_up();
+void sound_volume_down();

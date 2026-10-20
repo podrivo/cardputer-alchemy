@@ -33,6 +33,8 @@ constexpr uint8_t KEY_DOWN = 58;
 constexpr uint8_t KEY_ENTER = 67;
 constexpr uint8_t KEY_DEL = 65;
 constexpr uint8_t KEY_ESC = 1;
+constexpr uint8_t KEY_MINUS = 55; // -
+constexpr uint8_t KEY_PLUS = 61;  // = / +
 
 i2c_master_bus_handle_t i2c_bus;
 i2c_master_dev_handle_t tca;
@@ -135,6 +137,15 @@ extern "C" void app_main(void)
             } else {
                 display_show_game(&game, false);
             }
+            continue;
+        }
+
+        if (key == KEY_PLUS) {
+            sound_volume_up();
+            continue;
+        }
+        if (key == KEY_MINUS) {
+            sound_volume_down();
             continue;
         }
 

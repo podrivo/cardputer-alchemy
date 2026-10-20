@@ -15,15 +15,28 @@ constexpr gpio_num_t I2S_BCLK = GPIO_NUM_41;
 constexpr gpio_num_t I2S_WS = GPIO_NUM_43;
 constexpr gpio_num_t I2S_DOUT = GPIO_NUM_42;
 constexpr int SAMPLE_RATE = 16000;
+constexpr int VOL_STEP = 10;
+constexpr int VOL_DEFAULT = 70;
 
 i2c_master_dev_handle_t es8311;
 i2s_chan_handle_t tx;
 bool ready = false;
+int volume = VOL_DEFAULT; // 0–100
 
 esp_err_t es_write(uint8_t reg, uint8_t val)
 {
     uint8_t buf[2] = {reg, val};
     return i2c_master_transmit(es8311, buf, sizeof(buf), 100);
+}
+
+void apply_volume()
+{
+    if (!ready) {
+        return;
+    }
+    // ES8311 DAC volume: 0 = mute, 0xFF ≈ +32 dB; 0xBF ≈ 0 dB.
+    const uint8_t reg = volume == 0 ? 0 : static_cast<uint8_t>((volume * 256 / 100) - 1);
+    es_write(0x32, reg);
 }
 
 bool es8311_init()
@@ -38,7 +51,6 @@ bool es8311_init()
         {0x09, 0x0C}, // SDP IN: 16-bit I2S
         {0x12, 0x00}, // SYSTEM: DAC power up
         {0x13, 0x10}, // SYSTEM: enable HP drive
-        {0x32, 0xBF}, // DAC: volume 0 dB
         {0x37, 0x08}, // DAC: bypass equalizer
     };
     for (const auto &r : regs) {
@@ -80,17 +92,35 @@ void write_tone(int freq_hz, int ms)
 {
     const int n = SAMPLE_RATE * ms / 1000;
     const int period = freq_hz > 0 ? SAMPLE_RATE / freq_hz : 1;
+    const int amp = 90 * volume; // 0–9000
     int16_t buf[128];
     int written = 0;
     while (written < n) {
         const int chunk = (n - written) > 128 ? 128 : (n - written);
         for (int i = 0; i < chunk; ++i) {
             const int t = written + i;
-            buf[i] = (period > 1 && (t % period) < (period / 2)) ? 9000 : -9000;
+            buf[i] = (amp > 0 && period > 1 && (t % period) < (period / 2))
+                         ? static_cast<int16_t>(amp)
+                         : static_cast<int16_t>(-amp);
         }
         size_t bytes = 0;
         i2s_channel_write(tx, buf, chunk * sizeof(int16_t), &bytes, portMAX_DELAY);
         written += chunk;
+    }
+}
+
+void set_volume(int v)
+{
+    if (v < 0) {
+        v = 0;
+    } else if (v > 100) {
+        v = 100;
+    }
+    volume = v;
+    apply_volume();
+    ESP_LOGI(TAG, "volume %d", volume);
+    if (ready) {
+        write_tone(880, 40);
     }
 }
 
@@ -117,6 +147,7 @@ bool sound_init(i2c_master_bus_handle_t i2c_bus)
         return false;
     }
     ready = true;
+    apply_volume();
     ESP_LOGI(TAG, "Speaker ready");
     return true;
 }
@@ -132,4 +163,14 @@ void sound_play_discover()
     write_tone(784, 80);
     write_tone(1047, 120);
     write_tone(0, 20);
+}
+
+void sound_volume_up()
+{
+    set_volume(volume + VOL_STEP);
+}
+
+void sound_volume_down()
+{
+    set_volume(volume - VOL_STEP);
 }

@@ -15,28 +15,23 @@ constexpr gpio_num_t I2S_BCLK = GPIO_NUM_41;
 constexpr gpio_num_t I2S_WS = GPIO_NUM_43;
 constexpr gpio_num_t I2S_DOUT = GPIO_NUM_42;
 constexpr int SAMPLE_RATE = 16000;
-constexpr int VOL_STEP = 10;
-constexpr int VOL_DEFAULT = 70;
+constexpr int VOL_MAX = 10;
+constexpr int VOL_DEFAULT = 7;
+
+// Perceptual steps (roughly even loudness), PCM peak at each level 0–10.
+constexpr int16_t kAmp[VOL_MAX + 1] = {
+    0, 500, 900, 1400, 2100, 3000, 4000, 5200, 6500, 7800, 9000,
+};
 
 i2c_master_dev_handle_t es8311;
 i2s_chan_handle_t tx;
 bool ready = false;
-int volume = VOL_DEFAULT; // 0–100
+int volume = VOL_DEFAULT; // 0–10
 
 esp_err_t es_write(uint8_t reg, uint8_t val)
 {
     uint8_t buf[2] = {reg, val};
     return i2c_master_transmit(es8311, buf, sizeof(buf), 100);
-}
-
-void apply_volume()
-{
-    if (!ready) {
-        return;
-    }
-    // ES8311 DAC volume: 0 = mute, 0xFF ≈ +32 dB; 0xBF ≈ 0 dB.
-    const uint8_t reg = volume == 0 ? 0 : static_cast<uint8_t>((volume * 256 / 100) - 1);
-    es_write(0x32, reg);
 }
 
 bool es8311_init()
@@ -51,6 +46,7 @@ bool es8311_init()
         {0x09, 0x0C}, // SDP IN: 16-bit I2S
         {0x12, 0x00}, // SYSTEM: DAC power up
         {0x13, 0x10}, // SYSTEM: enable HP drive
+        {0x32, 0xBF}, // DAC: fixed 0 dB (volume via PCM amplitude)
         {0x37, 0x08}, // DAC: bypass equalizer
     };
     for (const auto &r : regs) {
@@ -69,9 +65,11 @@ bool i2s_init()
         return false;
     }
 
+    // Stereo slots + identical L/R samples — mono mode doubles / slows on ES8311.
     i2s_std_config_t std_cfg = {
         .clk_cfg = I2S_STD_CLK_DEFAULT_CONFIG(SAMPLE_RATE),
-        .slot_cfg = I2S_STD_PHILIPS_SLOT_DEFAULT_CONFIG(I2S_DATA_BIT_WIDTH_16BIT, I2S_SLOT_MODE_MONO),
+        .slot_cfg =
+            I2S_STD_PHILIPS_SLOT_DEFAULT_CONFIG(I2S_DATA_BIT_WIDTH_16BIT, I2S_SLOT_MODE_STEREO),
         .gpio_cfg =
             {
                 .mclk = GPIO_NUM_NC,
@@ -90,21 +88,24 @@ bool i2s_init()
 
 void write_tone(int freq_hz, int ms)
 {
-    const int n = SAMPLE_RATE * ms / 1000;
+    const int frames = SAMPLE_RATE * ms / 1000;
     const int period = freq_hz > 0 ? SAMPLE_RATE / freq_hz : 1;
-    const int amp = 90 * volume; // 0–9000
+    const int16_t amp = kAmp[volume];
+    // Interleaved L,R
     int16_t buf[128];
     int written = 0;
-    while (written < n) {
-        const int chunk = (n - written) > 128 ? 128 : (n - written);
+    while (written < frames) {
+        const int chunk = (frames - written) > 64 ? 64 : (frames - written);
         for (int i = 0; i < chunk; ++i) {
             const int t = written + i;
-            buf[i] = (amp > 0 && period > 1 && (t % period) < (period / 2))
-                         ? static_cast<int16_t>(amp)
-                         : static_cast<int16_t>(-amp);
+            const int16_t s =
+                (amp > 0 && period > 1 && (t % period) < (period / 2)) ? amp : static_cast<int16_t>(-amp);
+            buf[i * 2] = s;
+            buf[i * 2 + 1] = s;
         }
         size_t bytes = 0;
-        i2s_channel_write(tx, buf, chunk * sizeof(int16_t), &bytes, portMAX_DELAY);
+        i2s_channel_write(tx, buf, static_cast<size_t>(chunk) * 2 * sizeof(int16_t), &bytes,
+                          portMAX_DELAY);
         written += chunk;
     }
 }
@@ -113,12 +114,11 @@ void set_volume(int v)
 {
     if (v < 0) {
         v = 0;
-    } else if (v > 100) {
-        v = 100;
+    } else if (v > VOL_MAX) {
+        v = VOL_MAX;
     }
     volume = v;
-    apply_volume();
-    ESP_LOGI(TAG, "volume %d", volume);
+    ESP_LOGI(TAG, "volume %d/%d", volume, VOL_MAX);
     if (ready) {
         write_tone(880, 40);
     }
@@ -147,7 +147,6 @@ bool sound_init(i2c_master_bus_handle_t i2c_bus)
         return false;
     }
     ready = true;
-    apply_volume();
     ESP_LOGI(TAG, "Speaker ready");
     return true;
 }
@@ -167,10 +166,10 @@ void sound_play_discover()
 
 void sound_volume_up()
 {
-    set_volume(volume + VOL_STEP);
+    set_volume(volume + 1);
 }
 
 void sound_volume_down()
 {
-    set_volume(volume - VOL_STEP);
+    set_volume(volume - 1);
 }

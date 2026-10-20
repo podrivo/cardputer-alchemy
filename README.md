@@ -20,6 +20,12 @@ Recipes lean on [Little Alchemy](https://littlealchemy.com/) / [Little Alchemy 2
 
 Screen: title + progress (`N/220`), slots `A + B`, 4-row inventory, status, hint. New discoveries flash green.
 
+UI text uses M5GFX / LovyanGFX `fonts::Font0` (Adafruit GLCD 5×7 glyphs in a 6×8 cell):
+
+![Font0 sample](font0_sample.png)
+
+![Font0 glyph sheet (256 chars)](font0_glyphs.png)
+
 ## Prerequisites (one-time)
 
 Follow Espressif’s [Linux/macOS setup for ESP-IDF v5.4.2](https://docs.espressif.com/projects/esp-idf/en/v5.4.2/esp32s3/get-started/linux-macos-setup.html). Summary for macOS:
